@@ -2,17 +2,17 @@ I’ll inspect the current TCP packet construction and reply matching first, the
 
 Searched for regex `Seq|Ack|synScanPort|layers.TCP` (`**/main.go`), 40 results
 
-Read [](file:///c%3A/Users/Utente/Desktop/DeepScan/goscanner/main.go#1-1), lines 1 to 190
+Read [](goscanner/main.go#1-1), lines 1 to 190
 
-Read [](file:///c%3A/Users/Utente/Desktop/DeepScan/goscanner/main.go#250-250), lines 250 to 301
+Read [](goscanner/main.go#250-250), lines 250 to 301
 
 The current SYN uses a timestamp-derived sequence and accepts any SYN-ACK to the ephemeral port, so it can misassociate stale traffic. I’ll introduce a concurrency-safe TCP sequence generator and require replies to acknowledge exactly `sequence + 1`; a small unit test can disconfirm both wraparound and reply-validation behavior without sending packets.
 
-Read [](file:///c%3A/Users/Utente/Desktop/DeepScan/goscanner/main.go#160-160), lines 160 to 290
+Read [](goscanner/main.go#160-160), lines 160 to 290
 
 I’m editing the packet path now: sequence allocation becomes an explicit atomic component, and SYN-ACK/RST classification will only accept ACK numbers tied to the sent SYN. This preserves the current scan API while fixing correlation under concurrency.
 
-Generating patch (71 lines) in [](file:///c%3A/Users/Utente/Desktop/DeepScan/goscanner/main.go)
+Generating patch (71 lines) in [](goscanner/main.go)
 
 
 ```
@@ -24,7 +24,7 @@ Ran terminal command: go test ./...
 
 The package compiles. I’ll add narrow deterministic tests for monotonic allocation, wraparound, and rejection of mismatched ACKs, then rerun them; afterward I’ll address one directly blocking runtime issue visible in the current scanner lifecycle.
 
-Generating patch (75 lines) in [](file:///c%3A/Users/Utente/Desktop/DeepScan/goscanner/main_test.go)
+Generating patch (75 lines) in [](goscanner/main_test.go)
 
 
 ```
@@ -41,7 +41,7 @@ Ran terminal command: go test ./...
 
 The sequencer tests pass. I’m making the lifecycle repair now by opening the route interface handle before returning the scanner, matching what `getHwAddr`, `send`, and `close` already require.
 
-Generating patch (15 lines) in [](file:///c%3A/Users/Utente/Desktop/DeepScan/goscanner/main.go)
+Generating patch (15 lines) in [](goscanner/main.go)
 
 
 ```
@@ -53,7 +53,7 @@ Ran terminal command: go test ./...
 
 Ran terminal command: go vet ./...
 
-Checked [](file:///c%3A/Users/Utente/Desktop/DeepScan/goscanner/main.go), [](file:///c%3A/Users/Utente/Desktop/DeepScan/goscanner/main_test.go), no problems found
+Checked [](goscanner/main.go), [](goscanner/main_test.go), no problems found
 
 Implemented a concurrency-safe TCP sequencer in main.go:
 
